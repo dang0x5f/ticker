@@ -8,5 +8,5 @@ A primer script should probably be used to determine the argument that will be p
 
 `user@host:~ $ ticker "SongTitle - Artist"`\
 ticker compares argument string with string in file\
-    if different: ticker will truncate the file and write new values
-    if same: ticker will progress with the scrolling, incrementing index by one 
+- if different: ticker will truncate the file and write new values\
+- if same: ticker will progress with the scrolling, incrementing index by one\
