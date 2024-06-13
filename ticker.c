@@ -4,16 +4,17 @@
 #include <unistd.h>
 #include <string.h>
 
-#define TEXTBOX_SIZE 25
-#define TEXTBOX_MINUS1 (TEXTBOX_SIZE - 1)
+/* #define TEXTBOX_SIZE 25 */
+/* #define TEXTBOX_MINUS1 (TEXTBOX_SIZE - 1) */
 #define BUFSIZE 100
 
+void usage(char **);
 void reverse(char*);
 void itoa(int, char*);
 void read_from_save_file(int, char*);
 int split_strings(char*, const char*, char**);
-void printscroll(char**, int);
-void printscroll_withpad(char**, int, int);
+void printscroll(char**, int, int, int);
+void printscroll_withpad(char**, int, int, int);
 void write_to_save_file(char*, const char*, char**, char*);
 
 int main(int argc, char** argv){
@@ -22,15 +23,20 @@ int main(int argc, char** argv){
     char buffer[BUFSIZE];
     char* fields_arr[3];
     const char* DELIM = "~";
+
+    int textbox_size, textbox_minus1;
                                                 
     if (argc < 2){
-        fprintf(stderr, "usage: %s str\n", argv[0]); // err chk: arg count
+        /* fprintf(stderr, "usage: %s str\n", argv[0]); // err chk: arg count */
+        usage(argv);
         exit(EXIT_FAILURE);
     }
     if((fd = open(argv[2], O_RDONLY)) == -1){        // err chk: open file
-        fprintf(stderr, "failed to open");
+        fprintf(stderr, "failed to open\n");
         exit(EXIT_FAILURE);
     }
+    textbox_size = strtol(argv[3], NULL, 10);
+    textbox_minus1 = textbox_size - 1;
 
     read_from_save_file(fd,buffer);             
 
@@ -40,8 +46,8 @@ int main(int argc, char** argv){
     if (strcmp(fields_arr[1], argv[1]) == 0){
 
         // Fits within TextBox constraints - No Scroll
-        if(songtitle_len <= TEXTBOX_SIZE){            
-            printscroll_withpad(fields_arr, index, songtitle_len);
+        if(songtitle_len <= textbox_size){            
+            printscroll_withpad(fields_arr, index, songtitle_len, textbox_size);
             /* printf("%s",fields_arr[1]); // :) */
             exit(EXIT_SUCCESS);
         }
@@ -50,10 +56,10 @@ int main(int argc, char** argv){
         // Increment index count from previous execution
         index = atoi(fields_arr[0]) + 1;
 
-        printscroll(fields_arr, index); 
+        printscroll(fields_arr, index, textbox_size, textbox_minus1); 
 
         // Reset to beginning of scroll
-        if((strlen(fields_arr[1]) - index) == TEXTBOX_MINUS1)
+        if((strlen(fields_arr[1]) - index) == textbox_minus1)
             index = -1;
 
         char cindex[10];
@@ -62,10 +68,10 @@ int main(int argc, char** argv){
         write_to_save_file(cindex, DELIM, fields_arr, argv[2]);
     } 
     else{                                       
-        if(songtitle_len <= TEXTBOX_SIZE)
-            printscroll_withpad(fields_arr, index, songtitle_len);
+        if(songtitle_len <= textbox_size)
+            printscroll_withpad(fields_arr, index, songtitle_len, textbox_size);
         else
-            printscroll(fields_arr, index);
+            printscroll(fields_arr, index, textbox_size, textbox_minus1);
 
         write_to_save_file("0", DELIM, argv, argv[2]);
     }
@@ -89,32 +95,32 @@ void write_to_save_file(char* ind, const char* delim, char** title, char* file){
     close(write_fd);
 }
 
-void printscroll(char** fields_arr, int index){
+void printscroll(char** fields_arr, int index, int tb_size, int tb_min1){
     int i, x;
     char final[100];
     char final2[100];
-    char* finale = malloc(TEXTBOX_SIZE * sizeof(char));
+    char* finale = malloc(tb_size * sizeof(char));
 
     strncpy(final,fields_arr[1],strlen(fields_arr[1]));
-    for(i = 0, x = index; i < TEXTBOX_MINUS1; i++, x++){
+    for(i = 0, x = index; i < tb_min1; i++, x++){
         final2[i] = final[x];
     }
     final2[i] = '\0';
 
-    strncpy(finale, final2, TEXTBOX_SIZE);
+    strncpy(finale, final2, tb_size);
 
     printf("%s\n", finale);
 
     free(finale);
 }
 
-void printscroll_withpad(char** fields_arr, int index, int len){
+void printscroll_withpad(char** fields_arr, int index, int len, int tb_size){
     int i, x;
     char final[100];
     char final2[100];
-    char* finale = malloc(TEXTBOX_SIZE * sizeof(char));
+    char* finale = malloc(tb_size * sizeof(char));
 
-    int padding = (TEXTBOX_SIZE % len) - 1; // leave space for '\0'
+    int padding = (tb_size % len) - 1; // leave space for '\0'
 
     strncpy(final,fields_arr[1],strlen(fields_arr[1]));
     for(i = 0, x = index; i < len; i++, x++){
@@ -125,7 +131,7 @@ void printscroll_withpad(char** fields_arr, int index, int len){
     }
     final2[i] = '\0';
 
-    strncpy(finale, final2, TEXTBOX_SIZE);
+    strncpy(finale, final2, tb_size);
 
     printf("%s\n", finale);
 
@@ -181,4 +187,8 @@ void itoa(int nbr, char *arr){
         arr[i++] = '-';
     arr[i] = '\0';
     reverse(arr);
+}
+
+void usage(char ** av){
+    fprintf(stderr, "usage:\n  %s string file txtsize buffsize\n", av[0]);
 }
